@@ -13,15 +13,9 @@ const ImageModule = require("docxtemplater-image-module-free") as new (options: 
 import { listPhotosSorted } from "./photos";
 import { getPhotoSize } from "./sizing";
 
-const CM_TO_PX = 96 / 2.54;
-
-// function cmToPx(cm: number): number {
-//   return Math.round(cm * CM_TO_PX);
-// }
-
 function cmToModulePx(cm: number): number {
   const EMU_PER_CM = 360000;
-  const EMU_PER_PX = 9525; // как в docxtemplater-image-module (96 dpi)
+  const EMU_PER_PX = 9525;
   return Math.round((cm * EMU_PER_CM) / EMU_PER_PX);
 }
 
@@ -46,7 +40,6 @@ export async function insertPhotosIntoDocx(options: {
 
   const sizeCache = new Map<
     string,
-    // { widthCm: number; widthPx: number; heightPx: number }
     {
       widthCm: number;
       heightCm: number;
@@ -56,11 +49,6 @@ export async function insertPhotosIntoDocx(options: {
 
   for (const photo of selected) {
     const size = await getPhotoSize(photo.filePath);
-    // sizeCache.set(photo.filePath, {
-    //   widthCm: size.widthCm,
-    //   widthPx: size.widthPx,
-    //   heightPx: size.heightPx,
-    // });
 
     sizeCache.set(photo.filePath, {
       widthCm: size.widthCm,
@@ -72,8 +60,6 @@ export async function insertPhotosIntoDocx(options: {
   const imageModule = new ImageModule({
     centered: false,
     fileType: "docx",
-    // getImage: (tagValue: string) => fs.readFileSync(tagValue),
-    // return cached?.orientedBuffer ?? fs.readFileSync(tagValue);
 
     getImage: (tagValue: string) => {
       const cached = sizeCache.get(tagValue);
@@ -82,18 +68,6 @@ export async function insertPhotosIntoDocx(options: {
       }
       return cached.orientedBuffer;
     },
-    // getSize: (_img: Buffer, tagValue: string) => {
-    //   const cached = sizeCache.get(tagValue);
-    //   const widthCm = cached?.widthCm ?? 14;
-    //   const widthDocPx = cmToPx(widthCm);
-    //
-    //   if (!cached) return [widthDocPx, widthDocPx];
-    //
-    //   const heightDocPx = Math.round(
-    //     widthDocPx * (cached.heightPx / cached.widthPx),
-    //   );
-    //   return [widthDocPx, heightDocPx];
-    // },
 
 
     getSize: (_img: Buffer, tagValue: string) => {

@@ -97,8 +97,6 @@ async function insertPhotosIntoDocx(options) {
   const imageModule = new ImageModule({
     centered: false,
     fileType: "docx",
-    // getImage: (tagValue: string) => fs.readFileSync(tagValue),
-    // return cached?.orientedBuffer ?? fs.readFileSync(tagValue);
     getImage: (tagValue) => {
       const cached = sizeCache.get(tagValue);
       if (!cached) {
@@ -106,18 +104,6 @@ async function insertPhotosIntoDocx(options) {
       }
       return cached.orientedBuffer;
     },
-    // getSize: (_img: Buffer, tagValue: string) => {
-    //   const cached = sizeCache.get(tagValue);
-    //   const widthCm = cached?.widthCm ?? 14;
-    //   const widthDocPx = cmToPx(widthCm);
-    //
-    //   if (!cached) return [widthDocPx, widthDocPx];
-    //
-    //   const heightDocPx = Math.round(
-    //     widthDocPx * (cached.heightPx / cached.widthPx),
-    //   );
-    //   return [widthDocPx, heightDocPx];
-    // },
     getSize: (_img, tagValue) => {
       const cached = sizeCache.get(tagValue);
       const widthCm = cached?.widthCm ?? 14;
