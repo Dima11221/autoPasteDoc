@@ -1,0 +1,32 @@
+//{
+//  "compilerOptions": {
+//    "target": "ES2022",
+//    "module": "NodeNext",
+//    "moduleResolution": "NodeNext",
+//    "strict": true,
+//    "esModuleInterop": true,
+//    "skipLibCheck": true,
+//    "outDir": "dist",
+//    "rootDir": "src",
+//    "types": ["node"]
+//  },
+//  "include": ["src/**/*"]
+//}
+
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@core/*": ["src/core/*"]
+    }
+  },
+  "include": ["src/**/*", "electron.vite.config.ts"]
+}
