@@ -2,3 +2,9 @@
 {%data}
 
 {/photos}
+
+
+для исправления ошибки с электроном при первом старте:
+node node_modules/electron/install.js
+# или эквивалентно
+npm rebuild electron
