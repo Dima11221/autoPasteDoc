@@ -21,6 +21,7 @@ declare global {
         templatePath: string;
         photosFolder: string;
       }) => Promise<InsertOk | InsertFail>;
+      showItemInFolder: (filePath: string) => Promise<boolean>;
     };
   }
 }

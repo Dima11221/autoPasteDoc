@@ -1,56 +1,124 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+
+function fileNameFromPath(fullPath: string): string {
+  const parts = fullPath.split(/[/\\]/);
+  return parts[parts.length - 1] || fullPath;
+}
 
 export const App = () => {
   const [docxPath, setDocxPath] = useState<string | null>(null);
   const [photosFolder, setPhotosFolder] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("Выберите документ и папку с фото.");
   const [busy, setBusy] = useState(false);
+  const [lastOutputPath, setLastOutputPath] = useState<string | null>(null);
+  const [isError, setIsError] = useState(false);
+
+  const docxLabel = useMemo(
+    () => (docxPath ? fileNameFromPath(docxPath) : "Файл не выбран"),
+    [docxPath],
+  );
+
+  const folderLabel = useMemo(
+    () => (photosFolder ? fileNameFromPath(photosFolder) : "Папка не выбрана"),
+    [photosFolder],
+  );
 
   async function onSelectDocx() {
     const selected = await window.api.selectDocx();
-    if (selected) {
-      setDocxPath(selected);
-      setStatus("Документ выбран.");
-    }
+    if (!selected) return;
+    setDocxPath(selected);
+    setLastOutputPath(null);
+    setIsError(false);
+    setStatus("Документ выбран.");
+
+    // if (selected) {
+    //   setDocxPath(selected);
+    //   setStatus("Документ выбран.");
+    // }
   }
 
   async function onSelectPhotos() {
     const selected = await window.api.selectPhotosFolder();
-    if (selected) {
-      setPhotosFolder(selected);
-      setStatus("Папка с фото выбрана.");
-    }
+    if (!selected) return;
+    setPhotosFolder(selected);
+    setLastOutputPath(null);
+    setIsError(false);
+    setStatus("Папка с фото выбрана.");
+
+    // if (selected) {
+    //   setPhotosFolder(selected);
+    //   setStatus("Папка с фото выбрана.");
+    // }
   }
 
   async function onInsert() {
     if (!docxPath || !photosFolder) {
+      setIsError(true);
       setStatus("Сначала выберите и документ, и папку с фото.");
       return;
     }
 
     setBusy(true);
+    setIsError(false);
+    setLastOutputPath(null);
     setStatus("Вставляю фото…");
 
-    const result = await window.api.insertPhotos({
-      templatePath: docxPath,
-      photosFolder,
-    });
+    try {
+      const result = await window.api.insertPhotos({
+        templatePath: docxPath,
+        photosFolder,
+      });
 
-    setBusy(false);
+      if (!result.ok) {
+        setIsError(true);
+        setStatus(`Ошибка: ${result.error}`);
+        return;
+      }
 
-    if (!result.ok) {
-      setStatus(`Ошибка: ${result.error}`);
-      return;
+      const skippedText =
+        result.skipped.length > 0
+          ? `\nПропущено файлов без номера: ${result.skipped.length}`
+          : "";
+
+      setLastOutputPath(result.outputPath);
+      setIsError(false);
+      setStatus(
+        `Готово. Вставлено фото: ${result.insertedCount}\nФайл: ${fileNameFromPath(result.outputPath)}${skippedText}`,
+      );
+    } catch (error) {
+      setIsError(true);
+      setStatus(
+        error instanceof Error ? error.message : "Неизвестная ошибка",
+      );
+    } finally {
+      setBusy(false);
     }
 
-    const skippedText =
-      result.skipped.length > 0
-        ? `\nПропущено файлов: ${result.skipped.length}`
-        : "";
+    // const result = await window.api.insertPhotos({
+    //   templatePath: docxPath,
+    //   photosFolder,
+    // });
+    //
+    // setBusy(false);
+    //
+    // if (!result.ok) {
+    //   setStatus(`Ошибка: ${result.error}`);
+    //   return;
+    // }
+    //
+    // const skippedText =
+    //   result.skipped.length > 0
+    //     ? `\nПропущено файлов: ${result.skipped.length}`
+    //     : "";
+    //
+    // setStatus(
+    //   `Готово. Вставлено: ${result.insertedCount}\nСохранено: ${result.outputPath}${skippedText}`,
+    // );
+  }
 
-    setStatus(
-      `Готово. Вставлено: ${result.insertedCount}\nСохранено: ${result.outputPath}${skippedText}`,
-    );
+  const onReveal = async () => {
+    if (!lastOutputPath) return;
+    await window.api.showItemInFolder(lastOutputPath);
   }
 
   return (
@@ -62,23 +130,74 @@ export const App = () => {
         <button onClick={onSelectDocx} disabled={busy}>
           1. Выбрать Word-файл (.docx)
         </button>
-        <code style={{ whiteSpace: "pre-wrap" }}>
-          {docxPath ?? "файл не выбран"}
+        <code title={docxPath ?? undefined} style={{whiteSpace: "pre-wrap"}}>
+          {docxLabel}
         </code>
+        {/*<code style={{ whiteSpace: "pre-wrap" }}>*/}
+        {/*  {docxPath ?? "файл не выбран"}*/}
+        {/*</code>*/}
 
         <button onClick={onSelectPhotos} disabled={busy}>
           2. Выбрать папку с фото
         </button>
-        <code style={{ whiteSpace: "pre-wrap" }}>
-          {photosFolder ?? "папка не выбрана"}
+        <code
+          title={photosFolder ?? undefined}
+          style={{whiteSpace: "pre-wrap"}}
+        >
+          {folderLabel}
         </code>
+        {/*<code style={{ whiteSpace: "pre-wrap" }}>*/}
+        {/*  {photosFolder ?? "папка не выбрана"}*/}
+        {/*</code>*/}
 
-        <button onClick={onInsert} disabled={busy || !docxPath || !photosFolder}>
-          3. Вставить фото
+        <button
+          onClick={onInsert}
+          disabled={busy || !docxPath || !photosFolder}
+        >
+          {busy ? "Вставляю..." : "3. Вставить фото"}
         </button>
+
+        {busy && (
+          <div style={{display: "flex", alignItems: "center", gap: 8}}>
+            <span
+              aria-hidden
+              style={{
+                width: 16,
+                height: 16,
+                border: "2px solid #ccc",
+                borderRadius: "50%",
+                borderTopColor: "#333",
+                display: "inline-block",
+                animation: "spin 0,8s linear infinite",
+              }}
+            />
+            <span>Обработка документа, подождите...</span>
+          </div>
+        )}
+
+        {lastOutputPath && busy && (
+         <button onClick={onReveal}>
+           Показать результат в Finder / Проводнике
+         </button>
+        )}
       </div>
 
-      <pre style={{ marginTop: 24, whiteSpace: "pre-wrap" }}>{status}</pre>
+      <pre style={{
+        marginTop: 24,
+        whiteSpace: "pre-wrap",
+        color: isError ? "#b00020" : "inherit",
+      }}
+      >
+        {status}
+      </pre>
+
+      <style>{`
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </main>
   );
 }

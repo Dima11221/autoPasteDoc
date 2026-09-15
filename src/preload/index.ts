@@ -24,4 +24,7 @@ contextBridge.exposeInMainWorld("api", {
     photosFolder: string;
   }): Promise<InsertOk | InsertFail> =>
     ipcRenderer.invoke("insert:run", payload),
+
+  showItemInFolder: (filePath: string): Promise<boolean> =>
+    ipcRenderer.invoke("shell:showItemInFolder", filePath),
 });

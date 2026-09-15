@@ -19,7 +19,7 @@ function cmToModulePx(cm: number): number {
   return Math.round((cm * EMU_PER_CM) / EMU_PER_PX);
 }
 
-export type InsertResult = {
+export interface InsertResult {
   outputPath: string;
   insertedCount: number;
   skipped: string[];
@@ -37,6 +37,22 @@ export async function insertPhotosIntoDocx(options: {
 
   const { photos, skipped } = listPhotosSorted(photosFolder);
   const selected = typeof limit === "number" ? photos.slice(0, limit) : photos;
+
+  if (!fs.existsSync(templatePath)) {
+    throw new Error("ENOENT: выбранный Word-файл не найден");
+  }
+
+  if (!fs.existsSync(photosFolder)) {
+    throw new Error("ENOENT: выбранная папка с фотографиями не найдена");
+  }
+
+  if (selected.length === 0) {
+    const hint =
+      skipped.length > 0
+        ? `В папке есть изображения без номера в имени (пропущено: ${skipped.length}). Имя должно заканчиваться на пробел и цифру, например "Фасад 1.jpg"`
+        : "В папке нет файлов .jpg / .jpeg / .png";
+    throw new Error(`Нет фото для вставки. ${hint}`);
+  }
 
   const sizeCache = new Map<
     string,

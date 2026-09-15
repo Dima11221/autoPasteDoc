@@ -1,6 +1,7 @@
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import path from "node:path";
 import { insertPhotosIntoDocx } from "../core/insert";
+import { humanizeError } from "../core/errors";
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -68,12 +69,21 @@ function registerIpc() {
           skipped: result.skipped,
         };
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : String(error);
-        return { ok: false as const, error: message };
+        // const message =
+        //   error instanceof Error ? error.message : String(error);
+        // return { ok: false as const, error: message };
+
+        return { ok: false as const, error: humanizeError(error) };
       }
     },
   );
+
+  ipcMain.handle("shell:showItemInFolder", async (_event, filePath: string) => {
+    if (!filePath) return false
+    shell.showItemInFolder(filePath);
+    return true;
+  })
+
 }
 
 app.whenReady().then(() => {
