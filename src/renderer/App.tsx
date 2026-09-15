@@ -168,14 +168,14 @@ export const App = () => {
                 borderRadius: "50%",
                 borderTopColor: "#333",
                 display: "inline-block",
-                animation: "spin 0,8s linear infinite",
+                animation: "spin 0.8s linear infinite",
               }}
             />
             <span>Обработка документа, подождите...</span>
           </div>
         )}
 
-        {lastOutputPath && busy && (
+        {lastOutputPath && !busy && (
          <button onClick={onReveal}>
            Показать результат в Finder / Проводнике
          </button>
