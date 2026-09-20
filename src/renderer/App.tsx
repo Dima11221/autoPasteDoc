@@ -30,11 +30,6 @@ export const App = () => {
     setLastOutputPath(null);
     setIsError(false);
     setStatus("Документ выбран.");
-
-    // if (selected) {
-    //   setDocxPath(selected);
-    //   setStatus("Документ выбран.");
-    // }
   }
 
   async function onSelectPhotos() {
@@ -44,11 +39,6 @@ export const App = () => {
     setLastOutputPath(null);
     setIsError(false);
     setStatus("Папка с фото выбрана.");
-
-    // if (selected) {
-    //   setPhotosFolder(selected);
-    //   setStatus("Папка с фото выбрана.");
-    // }
   }
 
   async function onInsert() {
@@ -93,27 +83,6 @@ export const App = () => {
     } finally {
       setBusy(false);
     }
-
-    // const result = await window.api.insertPhotos({
-    //   templatePath: docxPath,
-    //   photosFolder,
-    // });
-    //
-    // setBusy(false);
-    //
-    // if (!result.ok) {
-    //   setStatus(`Ошибка: ${result.error}`);
-    //   return;
-    // }
-    //
-    // const skippedText =
-    //   result.skipped.length > 0
-    //     ? `\nПропущено файлов: ${result.skipped.length}`
-    //     : "";
-    //
-    // setStatus(
-    //   `Готово. Вставлено: ${result.insertedCount}\nСохранено: ${result.outputPath}${skippedText}`,
-    // );
   }
 
   const onReveal = async () => {
@@ -133,9 +102,6 @@ export const App = () => {
         <code title={docxPath ?? undefined} style={{whiteSpace: "pre-wrap"}}>
           {docxLabel}
         </code>
-        {/*<code style={{ whiteSpace: "pre-wrap" }}>*/}
-        {/*  {docxPath ?? "файл не выбран"}*/}
-        {/*</code>*/}
 
         <button onClick={onSelectPhotos} disabled={busy}>
           2. Выбрать папку с фото
@@ -146,9 +112,6 @@ export const App = () => {
         >
           {folderLabel}
         </code>
-        {/*<code style={{ whiteSpace: "pre-wrap" }}>*/}
-        {/*  {photosFolder ?? "папка не выбрана"}*/}
-        {/*</code>*/}
 
         <button
           onClick={onInsert}
