@@ -10,7 +10,7 @@ const ImageModule = require("docxtemplater-image-module-free") as new (options: 
   getSize: (img: Buffer, tagValue: string) => [number, number];
 }) => DXT.Module;
 
-import { listPhotosSorted } from "./photos";
+import {formatCaption, listPhotosSorted} from "./photos";
 import { getPhotoSize } from "./sizing";
 
 function cmToModulePx(cm: number): number {
@@ -105,7 +105,10 @@ export async function insertPhotosIntoDocx(options: {
   });
 
   doc.render({
-    photos: selected.map((photo) => ({ data: photo.filePath })),
+    photos: selected.map((photo) => ({
+      data: photo.filePath,
+      caption: formatCaption(photo),
+    })),
   });
 
   const buffer = doc.toBuffer();

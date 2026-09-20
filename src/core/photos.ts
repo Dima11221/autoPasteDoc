@@ -16,6 +16,10 @@ export const extractOrderNumber = (fileName: string): number | null => {
   return Number(match[1]);
 };
 
+export const formatCaption = (photo: PhotoItem): string => {
+  return `Фото ${photo.order}.`;
+};
+
 export const listPhotosSorted = (folderPath: string): {
   photos: PhotoItem[];
   skipped: string[];

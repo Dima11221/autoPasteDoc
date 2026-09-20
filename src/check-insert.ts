@@ -4,7 +4,7 @@ import { insertPhotosIntoDocx } from "./core/insert";
 async function main() {
   const templatePath = path.resolve(
     "fixtures",
-    // "989 Ф6Пр1 ЦТП Люблинская ул., д. 161, стр. 1.docx",
+    "960_для тестов.docx",
   );
   const photosFolder = path.resolve("fixtures/photos");
   const outputPath = path.resolve("fixtures/output-test.docx");

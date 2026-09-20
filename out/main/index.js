@@ -12,6 +12,9 @@ const extractOrderNumber = (fileName) => {
   if (!match) return null;
   return Number(match[1]);
 };
+const formatCaption = (photo) => {
+  return `Рис. ${photo.order}`;
+};
 const listPhotosSorted = (folderPath) => {
   const entries = fs.readdirSync(folderPath);
   const photos = [];
@@ -129,7 +132,10 @@ async function insertPhotosIntoDocx(options) {
     linebreaks: true
   });
   doc.render({
-    photos: selected.map((photo) => ({ data: photo.filePath }))
+    photos: selected.map((photo) => ({
+      data: photo.filePath,
+      caption: formatCaption(photo)
+    }))
   });
   const buffer = doc.toBuffer();
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
