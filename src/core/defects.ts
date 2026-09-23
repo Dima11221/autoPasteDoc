@@ -155,7 +155,7 @@ export const loadCaptionsFromDocx = (templatePath: string): CaptionsByOrder => {
   const { descCol, photoCol } = cols;
   for(let r = 1; r < table.length; r++) {
     const row = table[r];
-    const description = (row[descCol] ?? "").replace(/\s+/g, " ").trim();
+    const description = (row[descCol] ?? "").replace(/\s+/g, " ").trim().replace(/;+$/, "");
     const photoCell = row[photoCol] ?? "";
 
     if (!description) continue;

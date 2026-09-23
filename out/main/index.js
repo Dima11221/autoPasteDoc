@@ -17,7 +17,7 @@ const formatCaption = (photo, captionsByOrder) => {
   if (!descriptions || descriptions.length === 0) {
     return `Фото ${photo.order}.`;
   }
-  return `Фото ${photo.order}. ${descriptions.join(" ")}`;
+  return `Фото ${photo.order}. ${descriptions.join(". ")}`;
 };
 const listPhotosSorted = (folderPath) => {
   const entries = fs.readdirSync(folderPath);
@@ -193,7 +193,7 @@ const loadCaptionsFromDocx = (templatePath) => {
   const { descCol, photoCol } = cols;
   for (let r = 1; r < table.length; r++) {
     const row = table[r];
-    const description = (row[descCol] ?? "").replace(/\s+/g, " ").trim();
+    const description = (row[descCol] ?? "").replace(/\s+/g, " ").trim().replace(/;+$/, "");
     const photoCell = row[photoCol] ?? "";
     if (!description) continue;
     if (description === NO_DEFECTS) continue;
