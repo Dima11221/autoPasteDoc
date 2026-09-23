@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
-import PizZip from "pizzip";
 import Docxtemplater, {DXT} from "docxtemplater";
 import { formatCaption, listPhotosSorted } from "./photos";
 import { getPhotoSize } from "./sizing";
 import { loadCaptionsFromDocx } from "./defects";
+import { prepareTemplateZip } from "./prepareTemplate";
 
 const ImageModule = require("docxtemplater-image-module-free") as new (options: {
   centered: boolean;
@@ -62,16 +62,17 @@ export async function insertPhotosIntoDocx(options: {
     {
       widthCm: number;
       heightCm: number;
+      orientation: "landscape" | "portrait" | "square";
       orientedBuffer: Buffer;
     }
   >();
 
   for (const photo of selected) {
     const size = await getPhotoSize(photo.filePath);
-
     sizeCache.set(photo.filePath, {
       widthCm: size.widthCm,
       heightCm: size.heightCm,
+      orientation: size.orientation,
       orientedBuffer: size.orientedBuffer,
     });
   }
@@ -99,7 +100,7 @@ export async function insertPhotosIntoDocx(options: {
   });
 
   const content = fs.readFileSync(templatePath);
-  const zip = new PizZip(content);
+  const zip = prepareTemplateZip(content);
 
   const doc = new Docxtemplater(zip, {
     modules: [imageModule],
@@ -108,10 +109,15 @@ export async function insertPhotosIntoDocx(options: {
   });
 
   doc.render({
-    photos: selected.map((photo) => ({
-      data: photo.filePath,
-      caption: formatCaption(photo, captionsByOrder),
-    })),
+    photos: selected.map((photo) => {
+      const cached = sizeCache.get(photo.filePath);
+      return {
+        data: photo.filePath,
+        caption: formatCaption(photo, captionsByOrder),
+        // портрет = высота 10.5 → выравнивание влево
+        isPortrait: cached?.orientation === "portrait",
+      };
+    }),
   });
 
   const buffer = doc.toBuffer();

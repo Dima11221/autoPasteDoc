@@ -18,6 +18,14 @@ export const humanizeError = (error: unknown): string => {
     return "Не удалось найти файл шаблона. Проверьте путь к файлу и попробуйте снова.";
   }
 
+  if (
+    lower.includes("приложение № 2") ||
+    lower.includes("приложение № 3") ||
+    lower.includes("фотоматериалы")
+  ) {
+    return "Не найден раздел для вставки фото (Приложение № 2 … Фотоматериалы → Приложение № 3).";
+  }
+
   //Ошибки docxtemplater / плейсхолдера
   if (
     lower.includes("multierror") ||
