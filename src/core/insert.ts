@@ -2,6 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import PizZip from "pizzip";
 import Docxtemplater, {DXT} from "docxtemplater";
+import { formatCaption, listPhotosSorted } from "./photos";
+import { getPhotoSize } from "./sizing";
+import { loadCaptionsFromDocx } from "./defects";
 
 const ImageModule = require("docxtemplater-image-module-free") as new (options: {
   centered: boolean;
@@ -10,8 +13,6 @@ const ImageModule = require("docxtemplater-image-module-free") as new (options: 
   getSize: (img: Buffer, tagValue: string) => [number, number];
 }) => DXT.Module;
 
-import {formatCaption, listPhotosSorted} from "./photos";
-import { getPhotoSize } from "./sizing";
 
 function cmToModulePx(cm: number): number {
   const EMU_PER_CM = 360000;
@@ -53,6 +54,8 @@ export async function insertPhotosIntoDocx(options: {
         : "В папке нет файлов .jpg / .jpeg / .png";
     throw new Error(`Нет фото для вставки. ${hint}`);
   }
+
+  const captionsByOrder = loadCaptionsFromDocx(templatePath);
 
   const sizeCache = new Map<
     string,
@@ -107,7 +110,7 @@ export async function insertPhotosIntoDocx(options: {
   doc.render({
     photos: selected.map((photo) => ({
       data: photo.filePath,
-      caption: formatCaption(photo),
+      caption: formatCaption(photo, captionsByOrder),
     })),
   });
 

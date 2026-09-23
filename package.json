@@ -8,6 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "check:sizing": "tsx src/check-sizing.ts",
     "check:insert": "tsx src/check-insert.ts",
+    "check:defects": "tsx src/check-defects.ts",
     "dev": "electron-vite dev",
     "build": "electron-vite build"
   },

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { CaptionsByOrder } from "./defects";
 
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png"]);
 
@@ -16,8 +17,15 @@ export const extractOrderNumber = (fileName: string): number | null => {
   return Number(match[1]);
 };
 
-export const formatCaption = (photo: PhotoItem): string => {
-  return `Фото ${photo.order}.`;
+export const formatCaption = (
+  photo: PhotoItem,
+  captionsByOrder: CaptionsByOrder,
+): string => {
+  const descriptions = captionsByOrder?.get(photo.order);
+  if (!descriptions || descriptions.length === 0) {
+    return `Фото ${photo.order}.`
+  };
+  return `Фото ${photo.order}. ${descriptions.join(" ")}`;
 };
 
 export const listPhotosSorted = (folderPath: string): {
