@@ -25,7 +25,7 @@ export const formatCaption = (
   if (!descriptions || descriptions.length === 0) {
     return `Фото ${photo.order}.`
   };
-  return `Фото ${photo.order}. ${descriptions.join(". ")}`;
+  return `Фото ${photo.order}. ${descriptions.join(" ")}`;
 };
 
 export const listPhotosSorted = (folderPath: string): {
