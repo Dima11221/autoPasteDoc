@@ -92,8 +92,8 @@ export const App = () => {
 
   return (
     <main style={{ fontFamily: "system-ui", padding: 24, maxWidth: 720 }}>
-      <h1>autoPasteDoc</h1>
-      <p>Вставка фото в Word по номерам в именах файлов.</p>
+      <h1>Вставка фото в Word.</h1>
+      <p>Для работы с отчетами. Работает с помощью нумерации в именах фото.</p>
 
       <div style={{ display: "grid", gap: 12, marginTop: 24 }}>
         <button onClick={onSelectDocx} disabled={busy}>
