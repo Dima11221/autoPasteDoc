@@ -1,8 +1,11 @@
 {
   "name": "autopastedoc",
   "version": "1.0.0",
-  "description": "",
+  "description": "Вставка фото в Word-отчёты",
   "main": "./out/main/index.js",
+  "author": "Dima",
+  "license": "ISC",
+  "type": "commonjs",
   "scripts": {
     "check:photos": "tsx src/check-photos.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -10,12 +13,56 @@
     "check:insert": "tsx src/check-insert.ts",
     "check:defects": "tsx src/check-defects.ts",
     "dev": "electron-vite dev",
-    "build": "electron-vite build"
+    "build": "electron-vite build",
+    "dist:mac": "npm run build && electron-builder --mac --publish never",
+    "dist:win": "npm run build && electron-builder --win --x64 --publish never",
+    "dist": "npm run build && electron-builder --mac --win --x64 --publish never"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "build": {
+    "appId": "com.autopastedoc.app",
+    "productName": "AutoPasteDoc",
+    "copyright": "Copyright © 2026",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "**/node_modules/sharp/**/*",
+      "**/node_modules/@img/**/*"
+    ],
+    "npmRebuild": true,
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64"]
+        }
+      ],
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AutoPasteDoc"
+    }
+  },
   "dependencies": {
     "docxtemplater": "^3.69.3",
     "docxtemplater-image-module-free": "^1.1.1",
@@ -28,6 +75,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^5.2.0",
     "electron": "^44.3.0",
+    "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
