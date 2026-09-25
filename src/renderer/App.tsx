@@ -60,15 +60,6 @@ export const App = () => {
     };
   };
 
-  async function openTablesTad() {
-    setTab("tables");
-    if (!docxPath) {
-      setStatus("Сначала выберите документ.");
-      return;
-    };
-    await loadTablesFromDocx(docxPath);
-  }
-
   async function onSelectPhotos() {
     const selected = await window.api.selectPhotosFolder();
     if (!selected) return;
@@ -133,6 +124,7 @@ export const App = () => {
       setStatus("Сначала выберите Word-файл на вкладке «Фото».");
       return;
     }
+    await loadTablesFromDocx(docxPath);
     setAutofillBusy(true);
     try {
       const res = await window.api.loadAutofill({ templatePath: docxPath });
