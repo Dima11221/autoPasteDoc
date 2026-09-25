@@ -2,6 +2,10 @@ import { defineConfig, externalizeDepsPlugin } from "electron-vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 
+const alias = {
+  "@core": path.resolve(__dirname, "src/core"),
+};
+
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],

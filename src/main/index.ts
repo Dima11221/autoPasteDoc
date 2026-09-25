@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import path from "node:path";
 import { insertPhotosIntoDocx } from "../core/insert";
 import { humanizeError } from "../core/errors";
+import {fillTablesInDocx, loadAutofillValues} from "../core/autofillTables";
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -24,6 +25,11 @@ function createWindow() {
 function buildOutputPath(templatePath: string): string {
   const { dir, name, ext } = path.parse(templatePath);
   return path.join(dir, `${name}_с_фото${ext}`);
+}
+
+function buildAutofillOutputPath(templatePath: string): string {
+  const { dir, name, ext } = path.parse(templatePath);
+  return path.join(dir, `${name}_заполненный${ext}`);
 }
 
 function registerIpc() {
@@ -69,9 +75,6 @@ function registerIpc() {
           skipped: result.skipped,
         };
       } catch (error) {
-        // const message =
-        //   error instanceof Error ? error.message : String(error);
-        // return { ok: false as const, error: message };
 
         return { ok: false as const, error: humanizeError(error) };
       }
@@ -82,7 +85,36 @@ function registerIpc() {
     if (!filePath) return false
     shell.showItemInFolder(filePath);
     return true;
-  })
+  });
+
+  ipcMain.handle("autofill:load", async (_e, payload: { templatePath: string }) => {
+    try {
+      const result = loadAutofillValues(payload.templatePath);
+      return { ok: true as const, ...result };
+    } catch (error) {
+      return { ok: false as const, error: humanizeError(error) };
+    }
+  });
+
+  ipcMain.handle(
+    "autofill:run",
+    async (
+      _e,
+      payload: { templatePath: string; values: Record<string, string> },
+    ) => {
+      try {
+        const outputPath = buildAutofillOutputPath(payload.templatePath);
+        const result = fillTablesInDocx({
+          templatePath: payload.templatePath,
+          outputPath,
+          values: payload.values,
+        });
+        return { ok: true as const, ...result };
+      } catch (error) {
+        return { ok: false as const, error: humanizeError(error) };
+      }
+    },
+  );
 
 }
 
