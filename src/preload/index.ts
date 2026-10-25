@@ -12,6 +12,20 @@ export type InsertFail = {
   error: string;
 };
 
+export type AutofillLoadOk = {
+  ok: true;
+  values: Record<string, string>;
+  foundGeneral: number;
+  foundConstruction: number;
+};
+
+export type AutofillRunOk = {
+  ok: true;
+  outputPath: string;
+  updatedCells: number;
+  missingTargets: string[];
+};
+
 contextBridge.exposeInMainWorld("api", {
   selectDocx: (): Promise<string | null> =>
     ipcRenderer.invoke("dialog:selectDocx"),
@@ -27,4 +41,13 @@ contextBridge.exposeInMainWorld("api", {
 
   showItemInFolder: (filePath: string): Promise<boolean> =>
     ipcRenderer.invoke("shell:showItemInFolder", filePath),
+
+  loadAutofill: (payload: { templatePath: string }): Promise<AutofillLoadOk | InsertFail> =>
+    ipcRenderer.invoke("autofill:load", payload),
+
+  runAutofill: (payload: {
+    templatePath: string;
+    values: Record<string, string>;
+  }): Promise<AutofillRunOk | InsertFail> =>
+    ipcRenderer.invoke("autofill:run", payload),
 });

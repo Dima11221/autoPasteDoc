@@ -1,17 +1,29 @@
 import { useState, useMemo } from "react";
+import {emptyValues, FIELD_DEFS, ValuesMap} from "../core/tableFields";
 
 function fileNameFromPath(fullPath: string): string {
   const parts = fullPath.split(/[/\\]/);
   return parts[parts.length - 1] || fullPath;
 }
 
+type Tab = "photos" | "tables";
+
 export const App = () => {
   const [docxPath, setDocxPath] = useState<string | null>(null);
   const [photosFolder, setPhotosFolder] = useState<string | null>(null);
-  const [status, setStatus] = useState<string>("Выберите документ и папку с фото.");
   const [busy, setBusy] = useState(false);
   const [lastOutputPath, setLastOutputPath] = useState<string | null>(null);
-  const [isError, setIsError] = useState(false);
+  const [tab, setTab] = useState<Tab>("photos");
+  const [values, setValues] = useState<ValuesMap>(emptyValues);
+  const [autofillBusy, setAutofillBusy] = useState(false);
+  const [photosMsg, setPhotosMsg] = useState({
+    text: "Выберите документ и папку с фото.", isError: false
+  }
+  );
+  const [tablesMsg, setTablesMsg] = useState({
+    text: "Выберите документ для автозаполнения.", isError: false
+  }
+  );
 
   const docxLabel = useMemo(
     () => (docxPath ? fileNameFromPath(docxPath) : "Файл не выбран"),
@@ -23,35 +35,52 @@ export const App = () => {
     [photosFolder],
   );
 
+  async function loadTablesFromDocx(templatePath: string) {
+    setAutofillBusy(true);
+    try {
+      const res = await window.api.loadAutofill({ templatePath });
+      if (!res.ok) {
+        setTablesMsg({text: `Ошибка чтения таблиц: ${res.error}`, isError: true});
+        return;
+      }
+      setValues({ ...emptyValues(), ...res.values });
+      setTablesMsg({text: `Таблицы прочитаны (общие: ${res.foundGeneral}, конструкции: ${res.foundConstruction})`, isError: false});
+    } finally {
+      setAutofillBusy(false);
+    }
+  }
+
   async function onSelectDocx() {
     const selected = await window.api.selectDocx();
     if (!selected) return;
     setDocxPath(selected);
     setLastOutputPath(null);
-    setIsError(false);
-    setStatus("Документ выбран.");
-  }
+
+    if (tab === "tables") {
+      setTablesMsg({text: "Читаю таблицы...", isError: false})
+      await loadTablesFromDocx(selected);
+      return;
+    };
+    setPhotosMsg({text: "Документ выбран.", isError: false});
+  };
 
   async function onSelectPhotos() {
     const selected = await window.api.selectPhotosFolder();
     if (!selected) return;
     setPhotosFolder(selected);
     setLastOutputPath(null);
-    setIsError(false);
-    setStatus("Папка с фото выбрана.");
+    setPhotosMsg({text: "Папка с фото выбрана.", isError: false});
   }
 
   async function onInsert() {
     if (!docxPath || !photosFolder) {
-      setIsError(true);
-      setStatus("Сначала выберите и документ, и папку с фото.");
+      setPhotosMsg({text: "Сначала выберите и документ, и папку с фото.", isError: true});
       return;
     }
 
     setBusy(true);
-    setIsError(false);
     setLastOutputPath(null);
-    setStatus("Вставляю фото…");
+    setPhotosMsg({text: "Вставляю фото...", isError: false});
 
     try {
       const result = await window.api.insertPhotos({
@@ -60,8 +89,7 @@ export const App = () => {
       });
 
       if (!result.ok) {
-        setIsError(true);
-        setStatus(`Ошибка: ${result.error}`);
+        setPhotosMsg({text: `Ошибка: ${result.error}`, isError: true});
         return;
       }
 
@@ -71,15 +99,9 @@ export const App = () => {
           : "";
 
       setLastOutputPath(result.outputPath);
-      setIsError(false);
-      setStatus(
-        `Готово. Вставлено фото: ${result.insertedCount}\nФайл: ${fileNameFromPath(result.outputPath)}${skippedText}`,
-      );
+      setPhotosMsg({text: `Готово. Вставлено фото: ${result.insertedCount}\nФайл: ${fileNameFromPath(result.outputPath)}${skippedText}`, isError: false});
     } catch (error) {
-      setIsError(true);
-      setStatus(
-        error instanceof Error ? error.message : "Неизвестная ошибка",
-      );
+      setPhotosMsg({text: error instanceof Error ? error.message : "Неизвестная ошибка", isError: true})
     } finally {
       setBusy(false);
     }
@@ -90,38 +112,80 @@ export const App = () => {
     await window.api.showItemInFolder(lastOutputPath);
   }
 
+  async function openTablesTab() {
+    setTab("tables");
+    if (!docxPath) {
+      setTablesMsg({
+        text: "Сначала выберите Word-файл.",
+        isError: false,
+      })
+      return;
+    }
+    await loadTablesFromDocx(docxPath);
+  }
+
+  async function onAutofillInsert() {
+    if (!docxPath) return;
+    setAutofillBusy(true);
+    try {
+      const res = await window.api.runAutofill({
+        templatePath: docxPath,
+        values: values as Record<string, string>,
+      });
+      if (!res.ok) {
+        setTablesMsg({text: `Ошибка: ${res.error}`, isError: true})
+        return;
+      }
+      setLastOutputPath(res.outputPath);
+      const miss =
+        res.missingTargets.length > 0
+          ? `\nНе найдено в А.3: ${res.missingTargets.join("; ")}`
+          : "";
+      setTablesMsg({text: `Готово. Обновлено ячеек: ~${res.updatedCells}\nФайл: ${fileNameFromPath(res.outputPath)}${miss}`, isError: false});
+    } finally {
+      setAutofillBusy(false);
+    }
+  }
+
   return (
     <main style={{ fontFamily: "system-ui", padding: 24, maxWidth: 720 }}>
-      <h1>Вставка фото в Word.</h1>
-      <p>Для работы с отчетами. Работает с помощью нумерации в именах фото.</p>
+      <nav style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <button disabled={tab === "photos"} onClick={() => setTab("photos")}>Вставка фото</button>
+        <button disabled={tab === "tables"} onClick={openTablesTab}>Автозаполнение таблицы</button>
+      </nav>
 
-      <div style={{ display: "grid", gap: 12, marginTop: 24 }}>
-        <button onClick={onSelectDocx} disabled={busy}>
-          1. Выбрать Word-файл (.docx)
-        </button>
-        <code title={docxPath ?? undefined} style={{whiteSpace: "pre-wrap"}}>
-          {docxLabel}
-        </code>
+      {tab === "photos" && (
+        <div>
+          <h1>Вставка фото в Word.</h1>
+          <p>Для работы с отчетами. Работает с помощью нумерации в именах фото.</p>
 
-        <button onClick={onSelectPhotos} disabled={busy}>
-          2. Выбрать папку с фото
-        </button>
-        <code
-          title={photosFolder ?? undefined}
-          style={{whiteSpace: "pre-wrap"}}
-        >
-          {folderLabel}
-        </code>
+          <div style={{ display: "grid", gap: 12, marginTop: 24 }}>
+            <button onClick={onSelectDocx} disabled={busy}>
+              1. Выбрать Word-файл (.docx)
+            </button>
+            <code title={docxPath ?? undefined} style={{whiteSpace: "pre-wrap"}}>
+              {docxLabel}
+            </code>
 
-        <button
-          onClick={onInsert}
-          disabled={busy || !docxPath || !photosFolder}
-        >
-          {busy ? "Вставляю..." : "3. Вставить фото"}
-        </button>
+            <button onClick={onSelectPhotos} disabled={busy}>
+              2. Выбрать папку с фото
+            </button>
+            <code
+              title={photosFolder ?? undefined}
+              style={{whiteSpace: "pre-wrap"}}
+            >
+              {folderLabel}
+            </code>
 
-        {busy && (
-          <div style={{display: "flex", alignItems: "center", gap: 8}}>
+            <button
+              onClick={onInsert}
+              disabled={busy || !docxPath || !photosFolder}
+            >
+              {busy ? "Вставляю..." : "3. Вставить фото"}
+            </button>
+
+            {busy && (
+              <div style={{display: "flex", alignItems: "center", gap: 8}}>
             <span
               aria-hidden
               style={{
@@ -134,33 +198,100 @@ export const App = () => {
                 animation: "spin 0.8s linear infinite",
               }}
             />
-            <span>Обработка документа, подождите...</span>
+                <span>Обработка документа, подождите...</span>
+              </div>
+            )}
+
+            {lastOutputPath && !busy && (
+              <button onClick={onReveal}>
+                Показать результат в Finder / Проводнике
+              </button>
+            )}
           </div>
-        )}
 
-        {lastOutputPath && !busy && (
-         <button onClick={onReveal}>
-           Показать результат в Finder / Проводнике
-         </button>
-        )}
-      </div>
+          <pre
+            style={
+              {
+                marginTop: 24,
+                whiteSpace: "pre-wrap",
+                color: photosMsg.isError ? "#b00020" : "inherit",
+              }}
+          >
+            {photosMsg.text}
+          </pre>
 
-      <pre style={{
-        marginTop: 24,
-        whiteSpace: "pre-wrap",
-        color: isError ? "#b00020" : "inherit",
-      }}
-      >
-        {status}
-      </pre>
+          <style>{
+            `
+              @keyframes spin {
+                to {
+                  transform: rotate(360deg);
+                }}
+            `
+          }</style>
+        </div>
+      )}
 
-      <style>{`
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
+      {tab === "tables" && (
+        <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "grid", gap: 12, marginTop: 24 }}>
+            <button onClick={onSelectDocx} disabled={busy}>
+              Выбрать Word-файл (.docx)
+            </button>
+            <code title={docxPath ?? undefined} style={{whiteSpace: "pre-wrap"}}>
+              {docxLabel}
+            </code>
+          </div>
+          <h2>Общие сведения (табл. 5)</h2>
+          {FIELD_DEFS.filter((f) => f.group === "general").map((f) => (
+            <label key={f.key} style={{ display: "grid", gap: 4 }}>
+              <span>{f.formLabel}</span>
+              <textarea
+                rows={2}
+                value={values[f.key] ?? ""}
+                onChange={(e) =>
+                  setValues((prev) => ({ ...prev, [f.key]: e.target.value }))
+                }
+              />
+            </label>
+          ))}
+          <h2>Конструкции (табл. 6)</h2>
+          {FIELD_DEFS.filter((f) => f.group === "construction").map((f) => (
+            <label key={f.key} style={{ display: "grid", gap: 4 }}>
+              <span>{f.formLabel}</span>
+              <textarea
+                rows={3}
+                value={values[f.key] ?? ""}
+                onChange={(e) =>
+                  setValues((prev) => ({ ...prev, [f.key]: e.target.value }))
+                }
+              />
+            </label>
+          ))}
+          <button
+            onClick={onAutofillInsert}
+            disabled={autofillBusy || !docxPath}
+          >
+            {autofillBusy ? "Записываю…" : "Вставить в документ"}
+          </button>
+
+          {lastOutputPath && !busy && (
+            <button onClick={onReveal}>
+              Показать результат в Finder / Проводнике
+            </button>
+          )}
+
+          <pre
+            style={
+            {
+              marginTop: 24,
+              whiteSpace: "pre-wrap",
+              color: tablesMsg.isError ? "#b00020" : "inherit",
+            }}
+          >
+            {tablesMsg.text}
+          </pre>
+        </div>
+      )}
     </main>
   );
 }

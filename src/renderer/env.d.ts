@@ -12,6 +12,20 @@ type InsertFail = {
   error: string;
 };
 
+type AutofillLoadOk = {
+  ok: true;
+  values: Record<string, string>;
+  foundGeneral: number;
+  foundConstruction: number;
+};
+
+type AutofillRunOk = {
+  ok: true;
+  outputPath: string;
+  updatedCells: number;
+  missingTargets: string[];
+};
+
 declare global {
   interface Window {
     api: {
@@ -22,6 +36,13 @@ declare global {
         photosFolder: string;
       }) => Promise<InsertOk | InsertFail>;
       showItemInFolder: (filePath: string) => Promise<boolean>;
+      loadAutofill: (payload: {
+        templatePath: string;
+      }) => Promise<AutofillLoadOk | InsertFail>;
+      runAutofill: (payload: {
+        templatePath: string;
+        values: Record<string, string>;
+      }) => Promise<AutofillRunOk | InsertFail>;
     };
   }
 }
